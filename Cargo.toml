@@ -1,0 +1,19 @@
+[package]
+name = "map"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+futures = "0.3.17"
+console_error_panic_hook = { version = "0.1.7", optional = true }
+wasm-bindgen = "0.2.84"
+wasm-bindgen-futures = "0.4.23"
+js-sys = "0.3.67"
+osm-xml = "0.6.2"
+
+[dependencies.web-sys]
+version = "0.3.72"
+features = ['Geolocation', 'PositionOptions', 'PositionError', 'Position', 'Coordinates', 'CanvasRenderingContext2d', 'Document', 'Element', 'HtmlCanvasElement', 'Window', 'Navigator', 'Headers', 'Request', 'RequestInit', 'RequestMode', 'Response']
