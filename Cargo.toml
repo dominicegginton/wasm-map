@@ -16,4 +16,21 @@ osm-xml = "0.6.2"
 
 [dependencies.web-sys]
 version = "0.3.72"
-features = ['Geolocation', 'PositionOptions', 'PositionError', 'Position', 'Coordinates', 'CanvasRenderingContext2d', 'Document', 'Element', 'HtmlCanvasElement', 'Window', 'Navigator', 'Headers', 'Request', 'RequestInit', 'RequestMode', 'Response']
+features = [
+  "Geolocation",
+  "PositionOptions",
+  "PositionError",
+  "Position",
+  "Coordinates",
+  "CanvasRenderingContext2d",
+  "Document",
+  "Element",
+  "HtmlCanvasElement",
+  "Window",
+  "Navigator",
+  "Headers",
+  "Request",
+  "RequestInit",
+  "RequestMode",
+  "Response"
+]

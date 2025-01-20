@@ -22,7 +22,7 @@
         formatter = pkgs.nixpkgs-fmt;
         packages.map = pkgs.map;
         packages.default = pkgs.map;
-        devShells.default = pkgs.callPackage ./shell.nix { fenix = fenix-system; };
+        devShells.default = pkgs.callPackage ./shell.nix { };
       }
     );
 }

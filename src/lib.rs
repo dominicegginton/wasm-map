@@ -1,16 +1,21 @@
 extern crate js_sys;
 extern crate osm_xml as osm;
 extern crate wasm_bindgen;
+extern crate web_sys;
 use std::f64;
 use wasm_bindgen::prelude::*;
-use web_sys::*;
-
-use wasm_bindgen_futures::JsFuture;
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
+    fn log(value: &str);
+}
+
+#[wasm_bindgen]
+pub fn greet(name: &str) -> String {
+    log(&format!("Hello, {}!", name));
+
+    "Hello, World!".to_string()
 }
 
 fn map_points(value: f64, start1: f64, stop1: f64, start2: f64, stop2: f64) -> f64 {
@@ -82,7 +87,6 @@ pub fn parse_relations(text: String, width: f64, height: f64) -> js_sys::Array {
     for (_id, relation) in doc.relations.iter() {
         for member in relation.members.iter() {
             match member {
-                // Matching ways within the relation.
                 osm::Member::Way(way, t) => {
                     let w = &doc.resolve_reference(&way);
                     match w {
@@ -107,20 +111,20 @@ pub fn parse_relations(text: String, width: f64, height: f64) -> js_sys::Array {
 ///////////////////////////////////////////////
 
 
-async fn make_request(bbox: &str, query: &str) -> Result<JsValue, JsValue> {
-    let opts = RequestInit::new();
-    opts.set_method("GET");
-    opts.set_mode(RequestMode::Cors);
-    let url = format!("https://overpass-api.de/api/interpreter?data=[timeout:3600][maxsize:1073741824][bbox:{}];{};out;", bbox, query);
-
-    let request = Request::new_with_str_and_init(&url, &opts)?;
-    let window = web_sys::window().unwrap();
-    let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
-    assert!(resp_value.is_instance_of::<Response>());
-    let resp: Response = resp_value.dyn_into().unwrap();
-    let value = JsValue::from(JsFuture::from(resp.text()?).await?);
-    Ok(value)
-}
+// async fn make_request(bbox: &str, query: &str) -> Result<JsValue, JsValue> {
+//     let opts = RequestInit::new();
+//     opts.set_method("GET");
+//     opts.set_mode(RequestMode::Cors);
+//     let url = format!("https://overpass-api.de/api/interpreter?data=[timeout:3600][maxsize:1073741824][bbox:{}];{};out;", bbox, query);
+//
+//     let request = Request::new_with_str_and_init(&url, &opts)?;
+//     let window = web_sys::window().unwrap();
+//     let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+//     assert!(resp_value.is_instance_of::<Response>());
+//     let resp: Response = resp_value.dyn_into().unwrap();
+//     let value = JsValue::from(JsFuture::from(resp.text()?).await?);
+//     Ok(value)
+// }
 
 // fn listen_for_position(window: &Window) {
 //     let geolocation = window
@@ -235,97 +239,97 @@ async fn make_request(bbox: &str, query: &str) -> Result<JsValue, JsValue> {
 //     }
 //
 
-enum LayerType {
-    Path,
-    Area,
-    Point,
-}
-
-struct Color {
-    fill: JsValue,
-    stroke: JsValue,
-}
-
-struct Layer {
-    query: String,
-    layer_type: LayerType,
-    data: js_sys::Array,
-    color: Color,
-}
-
-trait Map {
-    fn init(&self);
-    fn draw(&self, layers: &Vec<Layer>);
-}
-
-impl Map for web_sys::HtmlCanvasElement {
-    fn init(&self) {
-        let ctx = self
-            .get_context("2d")
-            .unwrap()
-            .unwrap()
-            .dyn_into::<CanvasRenderingContext2d>()
-            .unwrap();
-        ctx.scale(1.0, -1.0).unwrap();
-
-        ctx.begin_path();
-        ctx.rect(0.0, 0.0, self.width() as f64, self.height() as f64);
-        ctx.fill();
-        ctx.close_path();
-    }
-
-    fn draw(&self, layers: &Vec<Layer>) {
-        let ctx = self
-            .get_context("2d")
-            .unwrap()
-            .unwrap()
-            .dyn_into::<CanvasRenderingContext2d>()
-            .unwrap();
-
-        for layer in layers.iter() {
-            ctx.begin_path();
-            ctx.set_fill_style(&layer.color.fill);
-            ctx.set_stroke_style(&layer.color.stroke);
-            match layer.layer_type {
-                LayerType::Path => {
-                    for i in 0..layer.data.length() {
-                        let coords = layer.data.get(i).dyn_ref::<js_sys::Array>().unwrap().clone();
-                        let x = coords.get(0).as_f64().unwrap();
-                        let y = coords.get(1).as_f64().unwrap();
-                        if i == 0 {
-                            ctx.move_to(x, y);
-                        } else {
-                            ctx.line_to(x, y);
-                        }
-                    }
-                }
-                LayerType::Area => {
-                  for i in 0..layer.data.length() {
-                    let coords = layer.data.get(i).dyn_ref::<js_sys::Array>().unwrap().clone();
-                    ctx.move_to(coords.get(0).as_f64().unwrap(), coords.get(1).as_f64().unwrap());
-                    for j in 1..coords.length() {
-                      let x = coords.get(j).as_f64().unwrap();
-                      let y = coords.get(j + 1).as_f64().unwrap();
-                      ctx.line_to(x, y);
-                    }
-                  }
-                }
-                LayerType::Point => {
-                    for i in 0..layer.data.length() {
-                        let coords = layer.data.get(i).dyn_ref::<js_sys::Array>().unwrap().clone();
-                        let x = coords.get(0).as_f64().unwrap();
-                        let y = coords.get(1).as_f64().unwrap();
-                        ctx.begin_path();
-                        ctx.arc(x, y, 3.0, 0.0, 2.0 * f64::consts::PI).unwrap();
-                    }
-                }
-            }
-            ctx.fill();
-            ctx.stroke();
-            ctx.close_path();
-        }
-    }
-}
+// enum LayerType {
+//     Path,
+//     Area,
+//     Point,
+// }
+//
+// struct Color {
+//     fill: JsValue,
+//     stroke: JsValue,
+// }
+//
+// struct Layer {
+//     query: String,
+//     layer_type: LayerType,
+//     data: js_sys::Array,
+//     color: Color,
+// }
+//
+// trait Map {
+//     fn init(&self);
+//     fn draw(&self, layers: &Vec<Layer>);
+// }
+//
+// impl Map for web_sys::HtmlCanvasElement {
+//     fn init(&self) {
+//         let ctx = self
+//             .get_context("2d")
+//             .unwrap()
+//             .unwrap()
+//             .dyn_into::<CanvasRenderingContext2d>()
+//             .unwrap();
+//         ctx.scale(1.0, -1.0).unwrap();
+//
+//         ctx.begin_path();
+//         ctx.rect(0.0, 0.0, self.width() as f64, self.height() as f64);
+//         ctx.fill();
+//         ctx.close_path();
+//     }
+//
+//     fn draw(&self, layers: &Vec<Layer>) {
+//         let ctx = self
+//             .get_context("2d")
+//             .unwrap()
+//             .unwrap()
+//             .dyn_into::<CanvasRenderingContext2d>()
+//             .unwrap();
+//
+//         for layer in layers.iter() {
+//             ctx.begin_path();
+//             ctx.set_fill_style(&layer.color.fill);
+//             ctx.set_stroke_style(&layer.color.stroke);
+//             match layer.layer_type {
+//                 LayerType::Path => {
+//                     for i in 0..layer.data.length() {
+//                         let coords = layer.data.get(i).dyn_ref::<js_sys::Array>().unwrap().clone();
+//                         let x = coords.get(0).as_f64().unwrap();
+//                         let y = coords.get(1).as_f64().unwrap();
+//                         if i == 0 {
+//                             ctx.move_to(x, y);
+//                         } else {
+//                             ctx.line_to(x, y);
+//                         }
+//                     }
+//                 }
+//                 LayerType::Area => {
+//                   for i in 0..layer.data.length() {
+//                     let coords = layer.data.get(i).dyn_ref::<js_sys::Array>().unwrap().clone();
+//                     ctx.move_to(coords.get(0).as_f64().unwrap(), coords.get(1).as_f64().unwrap());
+//                     for j in 1..coords.length() {
+//                       let x = coords.get(j).as_f64().unwrap();
+//                       let y = coords.get(j + 1).as_f64().unwrap();
+//                       ctx.line_to(x, y);
+//                     }
+//                   }
+//                 }
+//                 LayerType::Point => {
+//                     for i in 0..layer.data.length() {
+//                         let coords = layer.data.get(i).dyn_ref::<js_sys::Array>().unwrap().clone();
+//                         let x = coords.get(0).as_f64().unwrap();
+//                         let y = coords.get(1).as_f64().unwrap();
+//                         ctx.begin_path();
+//                         ctx.arc(x, y, 3.0, 0.0, 2.0 * f64::consts::PI).unwrap();
+//                     }
+//                 }
+//             }
+//             ctx.fill();
+//             ctx.stroke();
+//             ctx.close_path();
+//         }
+//     }
+// }
 
 // #[wasm_bindgen(start)]
 // async fn start() -> Result<(), JsValue> {

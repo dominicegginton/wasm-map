@@ -1,19 +1,17 @@
-{ pkgs, mkShell, fenix }:
+{ lib, writers, mkShell, map, nodePackages, ... }:
 
 let
-  develop = pkgs.writeShellScriptBin "develop" ''
-    wasm-pack build --target web
+  develop = writers.writeBashBin "develop" ''
+    PATH=${lib.makeBinPath [ nodePackages.http-server ]}:$PATH
+    set -efu -o pipefail
+    wasm-pack build --dev --target web || exit 1
     http-server -p 8080
   '';
 in
 
 mkShell {
-  inputsFrom = [ pkgs.map ];
-  buildInputs = with pkgs.nodePackages; [
-    http-server
-    prettier
-  ];
+  inputsFrom = [ map ];
+  buildInputs = with nodePackages; [ prettier ];
   CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_LINKER = "lld";
-  RUST_BACKTRACE = 1;
   packages = [ develop ];
 }

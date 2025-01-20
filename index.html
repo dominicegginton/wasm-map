@@ -25,6 +25,7 @@
     <canvas id="canvas"></canvas>
     <script type="module">
       import init, {
+        greet,
         parse_nodes,
         parse_relations,
         parse_ways,
@@ -106,7 +107,10 @@
         let w = lon - range;
         let bbox = `${s},${w},${n},${e}`;
         let ratio = (Math.abs(w) - Math.abs(e)) / (n - s);
-        let windowSmallestDimension = Math.min(window.innerWidth, window.innerHeight);
+        let windowSmallestDimension = Math.min(
+          window.innerWidth,
+          window.innerHeight,
+        );
         let width = windowSmallestDimension;
         let height = windowSmallestDimension * ratio;
 
@@ -120,7 +124,8 @@
         let query = `[timeout:3600][maxsize:1073741824][bbox:${bbox}];`;
         let url = `https://overpass-api.de/api/interpreter?data=${query}`;
 
-        let canvas = document.getElementById("canvas") || document.createElement("canvas");
+        let canvas =
+          document.getElementById("canvas") || document.createElement("canvas");
         canvas.id = "canvas";
         let info = document.createElement("div");
         info.id = "info";
@@ -137,12 +142,20 @@
         document.body.appendChild(info);
 
         function getColorFromCSSVariable(variable) {
-          let color = getComputedStyle(document.documentElement).getPropertyValue(variable);
+          let color = getComputedStyle(
+            document.documentElement,
+          ).getPropertyValue(variable);
           return color;
         }
 
-        const CURRENT_POSITION_OPTIONS = { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 };
-        const FAKE_POSITION = { coords: { latitude: 52.4128, longitude: -1.5090 } };
+        const CURRENT_POSITION_OPTIONS = {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        };
+        const FAKE_POSITION = {
+          coords: { latitude: 52.4128, longitude: -1.509 },
+        };
 
         canvas.addEventListener("mousemove", (event) => {
           let x = event.clientX;
@@ -153,18 +166,25 @@
 
           let isHoveringBusStop = bus_stops_data?.some((bus_stop) => {
             let [bus_stop_x, bus_stop_y] = bus_stop;
-            let distance = Math.sqrt((bus_stop_x - x) ** 2 + (bus_stop_y - y) ** 2);
+            let distance = Math.sqrt(
+              (bus_stop_x - x) ** 2 + (bus_stop_y - y) ** 2,
+            );
             return distance < 5;
           });
 
           let isHoveringBuilding = buildings_data?.some((building) => {
             let isInside = false;
-            for (let i = 0, j = building.length - 1; i < building.length; j = i++) {
+            for (
+              let i = 0, j = building.length - 1;
+              i < building.length;
+              j = i++
+            ) {
               let xi = building[i][0],
                 yi = building[i][1];
               let xj = building[j][0],
                 yj = building[j][1];
-              let intersect = yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+              let intersect =
+                yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
               if (intersect) {
                 isInside = !isInside;
               }
@@ -182,7 +202,6 @@
             info.style.display = "none";
           }
         });
-
 
         canvas.width = height;
         canvas.height = width;
@@ -294,25 +313,27 @@
         });
       }
 
-      const FAKE_POSITION = { coords: { latitude: 52.4128, longitude: -1.5090 } };
+      const FAKE_POSITION = {
+        coords: { latitude: 52.4128, longitude: -1.509 },
+      };
 
       function onCurrentPoisitionError(error) {
         console.error(error);
         onCurrentPoisitionSucess(FAKE_POSITION);
       }
 
-
-      if (navigator.geolocation) {
-        init();
-        navigator.geolocation.getCurrentPosition(
-          onCurrentPoisitionSucess,
-          onCurrentPoisitionError,
-          { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
-      } else {
-        console.error("Geolocation is not supported by this browser.");
-        onCurrentPoisitionSucess(FAKE_POSITION);
-      }
+      init().then(() => {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            onCurrentPoisitionSucess,
+            onCurrentPoisitionError,
+            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 },
+          );
+        } else {
+          console.error("Geolocation is not supported by this browser.");
+          onCurrentPoisitionSucess(FAKE_POSITION);
+        }
+      });
     </script>
   </body>
 </html>
