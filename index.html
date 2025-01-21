@@ -4,12 +4,14 @@
     <meta charset="UTF-8" />
     <title>Map</title>
     <style>
-      html {
+      * {
         --yellow: #f0e68c;
         --green: #aaaa00;
         --blue: #add8e6;
         --red: #dd1133;
         --grey: #cccccc;
+      }
+      html {
         background: var(--grey);
       }
       body {
@@ -18,322 +20,332 @@
         height: 100%;
         width: 100%;
         background: var(--grey);
+        padding: 4px;
+      }
+      button {
+        background: var(--green);
+        border: none;
+        padding: 10px;
+        border-radius: 5px;
+        cursor: pointer;
       }
     </style>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
     <script type="module">
-      import init, {
-        greet,
-        parse_nodes,
-        parse_relations,
-        parse_ways,
-      } from "./pkg/map.js";
+      import init from "./pkg/map.js";
 
-      function onCurrentPoisitionSucess(position) {
-        function getLand(url) {
-          console.log("getting land");
-          return fetch(`${url}${land};out;`)
-            .then((response) => {
-              return response.text();
-            })
-            .then((data) => {
-              console.log("parsing land");
-              return parse_ways(data, width, height);
-            });
-        }
-        function getWater(url) {
-          console.log("getting water");
-          return fetch(`${url}${water};out;`)
-            .then((response) => {
-              return response.text();
-            })
-            .then((data) => {
-              console.log("parsing water");
-              return parse_ways(data, width, height);
-            });
-        }
-        function getBuildings(url) {
-          console.log("getting buildings");
-          return fetch(`${url}${buildings};out;`)
-            .then((response) => {
-              return response.text();
-            })
-            .then((data) => {
-              console.log("parsing buildings");
-              return parse_ways(data, width, height);
-            });
-        }
-        function getHighways(url) {
-          console.log("getting highways");
-          return fetch(`${url}${highways};out;`)
-            .then((response) => {
-              return response.text();
-            })
-            .then((data) => {
-              console.log("parsing highways");
-              return parse_ways(data, width, height);
-            });
-        }
-        function getBusRoutes(url) {
-          console.log("getting bus routes");
-          return fetch(`${url}${bus_routes};out;`)
-            .then((response) => {
-              return response.text();
-            })
-            .then((data) => {
-              console.log("parsing bus routes");
-              return parse_ways(data, width, height);
-            });
-        }
-        function getBusStops(url) {
-          console.log("getting bus stops");
-          return fetch(`${url}${bus_stops};out;`)
-            .then((response) => {
-              return response.text();
-            })
-            .then((data) => {
-              console.log("parsing bus stops");
-              return parse_nodes(data, width, height);
-            });
-        }
-        let lat = position.coords.latitude;
-        let lon = position.coords.longitude;
-        const range = 0.005; // 0.015 degrees is about 1 mile
-        let n = lat + range;
-        let s = lat - range;
-        let e = lon + range;
-        let w = lon - range;
-        let bbox = `${s},${w},${n},${e}`;
-        let ratio = (Math.abs(w) - Math.abs(e)) / (n - s);
-        let windowSmallestDimension = Math.min(
-          window.innerWidth,
-          window.innerHeight,
-        );
-        let width = windowSmallestDimension;
-        let height = windowSmallestDimension * ratio;
+      init().then(() => console.log("WASM initialized"));
 
-        let land = `way[landuse];foreach{(._;>;);out;}`;
-        let water = `way[water];foreach{(._;>;);out;}`;
-        let buildings = `way[building];foreach{(._;>;);out;}`;
-        let highways = `way[highway];foreach{(._;>;);out;}`;
-        let bus_routes = `relation[type=route][route=bus];foreach{(._;>;);out;}`;
-        let bus_stops = `node[highway=bus_stop];foreach{(._;>;);out;}`;
+      // import init, {
+      //   parse_nodes,
+      //   parse_relations,
+      //   parse_ways,
+      // } from "./pkg/map.js";
 
-        let query = `[timeout:3600][maxsize:1073741824][bbox:${bbox}];`;
-        let url = `https://overpass-api.de/api/interpreter?data=${query}`;
+      // function onCurrentPoisitionSucess(position) {
+      //   function getLand(url) {
+      //     console.log("getting land");
+      //     return fetch(`${url}${land};out;`)
+      //       .then((response) => {
+      //         return response.text();
+      //       })
+      //       .then((data) => {
+      //         console.log("parsing land");
+      //         return parse_ways(data, width, height);
+      //       });
+      //   }
+      //   function getWater(url) {
+      //     console.log("getting water");
+      //     return fetch(`${url}${water};out;`)
+      //       .then((response) => {
+      //         return response.text();
+      //       })
+      //       .then((data) => {
+      //         console.log("parsing water");
+      //         return parse_ways(data, width, height);
+      //       });
+      //   }
+      //   function getBuildings(url) {
+      //     console.log("getting buildings");
+      //     return fetch(`${url}${buildings};out;`)
+      //       .then((response) => {
+      //         return response.text();
+      //       })
+      //       .then((data) => {
+      //         console.log("parsing buildings");
+      //         return parse_ways(data, width, height);
+      //       });
+      //   }
+      //   function getHighways(url) {
+      //     console.log("getting highways");
+      //     return fetch(`${url}${highways};out;`)
+      //       .then((response) => {
+      //         return response.text();
+      //       })
+      //       .then((data) => {
+      //         console.log("parsing highways");
+      //         return parse_ways(data, width, height);
+      //       });
+      //   }
+      //   function getBusRoutes(url) {
+      //     console.log("getting bus routes");
+      //     return fetch(`${url}${bus_routes};out;`)
+      //       .then((response) => {
+      //         return response.text();
+      //       })
+      //       .then((data) => {
+      //         console.log("parsing bus routes");
+      //         return parse_ways(data, width, height);
+      //       });
+      //   }
+      //   function getBusStops(url) {
+      //     console.log("getting bus stops");
+      //     return fetch(`${url}${bus_stops};out;`)
+      //       .then((response) => {
+      //         return response.text();
+      //       })
+      //       .then((data) => {
+      //         console.log("parsing bus stops");
+      //         return parse_nodes(data, width, height);
+      //       });
+      //   }
+      //   let lat = position.coords.latitude;
+      //   let lon = position.coords.longitude;
+      //   const range = 0.005; // 0.015 degrees is about 1 mile
+      //   let n = lat + range;
+      //   let s = lat - range;
+      //   let e = lon + range;
+      //   let w = lon - range;
+      //   let bbox = `${s},${w},${n},${e}`;
+      //   let ratio = (Math.abs(w) - Math.abs(e)) / (n - s);
+      //   let windowSmallestDimension = Math.min(
+      //     window.innerWidth,
+      //     window.innerHeight,
+      //   );
+      //   let width = windowSmallestDimension;
+      //   let height = windowSmallestDimension * ratio;
+      //
+      //   let land = `way[landuse];foreach{(._;>;);out;}`;
+      //   let water = `way[water];foreach{(._;>;);out;}`;
+      //   let buildings = `way[building];foreach{(._;>;);out;}`;
+      //   let highways = `way[highway];foreach{(._;>;);out;}`;
+      //   let bus_routes = `relation[type=route][route=bus];foreach{(._;>;);out;}`;
+      //   let bus_stops = `node[highway=bus_stop];foreach{(._;>;);out;}`;
+      //
+      //   let query = `[timeout:3600][maxsize:1073741824][bbox:${bbox}];`;
+      //   let url = `https://overpass-api.de/api/interpreter?data=${query}`;
+      //
+      //   let canvas =
+      //     document.getElementById("canvas") || document.createElement("canvas");
+      //   canvas.id = "canvas";
+      //   let info = document.createElement("div");
+      //   info.id = "info";
+      //   info.style.display = "none";
+      //   info.style.position = "absolute";
+      //   info.style.left = "10px";
+      //   info.style.top = "10px";
+      //   info.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+      //   info.style.padding = "5px";
+      //   info.style.borderRadius = "5px";
+      //   info.style.zIndex = "1000";
+      //   info.style.transition = "display 0.5s ease-in-out";
+      //   info.style.pointerEvents = "none";
+      //   document.body.appendChild(info);
+      //
+      //   function getColorFromCSSVariable(variable) {
+      //     let color = getComputedStyle(
+      //       document.documentElement,
+      //     ).getPropertyValue(variable);
+      //     return color;
+      //   }
+      //
+      //   const CURRENT_POSITION_OPTIONS = {
+      //     enableHighAccuracy: true,
+      //     timeout: 5000,
+      //     maximumAge: 0,
+      //   };
+      //   const FAKE_POSITION = {
+      //     coords: { latitude: 52.4128, longitude: -1.509 },
+      //   };
+      //
+      //   canvas.addEventListener("mousemove", (event) => {
+      //     let x = event.clientX;
+      //     let y = event.clientY;
+      //     let rect = canvas.getBoundingClientRect();
+      //     x = x - rect.left;
+      //     y = rect.height - (y - rect.top);
+      //
+      //     let isHoveringBusStop = bus_stops_data?.some((bus_stop) => {
+      //       let [bus_stop_x, bus_stop_y] = bus_stop;
+      //       let distance = Math.sqrt(
+      //         (bus_stop_x - x) ** 2 + (bus_stop_y - y) ** 2,
+      //       );
+      //       return distance < 5;
+      //     });
+      //
+      //     let isHoveringBuilding = buildings_data?.some((building) => {
+      //       let isInside = false;
+      //       for (
+      //         let i = 0, j = building.length - 1;
+      //         i < building.length;
+      //         j = i++
+      //       ) {
+      //         let xi = building[i][0],
+      //           yi = building[i][1];
+      //         let xj = building[j][0],
+      //           yj = building[j][1];
+      //         let intersect =
+      //           yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+      //         if (intersect) {
+      //           isInside = !isInside;
+      //         }
+      //       }
+      //       return isInside;
+      //     });
+      //
+      //     if (isHoveringBusStop) {
+      //       info.style.display = "block";
+      //       info.innerText = "Bus Stop";
+      //     } else if (isHoveringBuilding) {
+      //       info.style.display = "block";
+      //       info.innerText = "Building";
+      //     } else {
+      //       info.style.display = "none";
+      //     }
+      //   });
+      //
+      //   canvas.width = height;
+      //   canvas.height = width;
+      //   let ctx = canvas.getContext("2d");
+      //   ctx.translate(0, width);
+      //   ctx.scale(1, -1);
+      //   ctx.fillStyle = getColorFromCSSVariable("--grey");
+      //   ctx.fillRect(0, 0, height, width);
+      //
+      //   function drawMap() {
+      //     if (land_data) {
+      //       for (let land of land_data) {
+      //         ctx.beginPath();
+      //         ctx.fillStyle = getColorFromCSSVariable("--green");
+      //         for (let point of land) {
+      //           ctx.lineTo(point[0], point[1]);
+      //         }
+      //         ctx.fill();
+      //         ctx.closePath();
+      //       }
+      //     }
+      //     if (water_data) {
+      //       for (let water of water_data) {
+      //         ctx.beginPath();
+      //         ctx.fillStyle = getColorFromCSSVariable("--blue");
+      //         for (let point of water) {
+      //           ctx.lineTo(point[0], point[1]);
+      //         }
+      //         ctx.fill();
+      //         ctx.closePath();
+      //       }
+      //     }
+      //     if (buildings_data) {
+      //       for (let building of buildings_data) {
+      //         ctx.beginPath();
+      //         ctx.fillStyle = getColorFromCSSVariable("--red");
+      //         for (let point of building) {
+      //           ctx.lineTo(point[0], point[1]);
+      //         }
+      //         ctx.fill();
+      //         ctx.closePath();
+      //       }
+      //     }
+      //     if (highways_data) {
+      //       for (let highway of highways_data) {
+      //         ctx.beginPath();
+      //         ctx.strokeStyle = getColorFromCSSVariable("--yellow");
+      //         for (let point of highway) {
+      //           ctx.lineTo(point[0], point[1]);
+      //         }
+      //         ctx.stroke();
+      //         ctx.closePath();
+      //       }
+      //     }
+      //     if (bus_routes_data) {
+      //       for (let bus_route of bus_routes_data) {
+      //         ctx.beginPath();
+      //         ctx.strokeStyle = getColorFromCSSVariable("--yellow");
+      //         for (let point of bus_route) {
+      //           ctx.lineTo(point[0], point[1]);
+      //         }
+      //         ctx.stroke();
+      //         ctx.closePath();
+      //       }
+      //     }
+      //     if (bus_stops_data) {
+      //       for (let bus_stop of bus_stops_data) {
+      //         ctx.fillStyle = getColorFromCSSVariable("--yellow");
+      //         ctx.strokeStyle = getColorFromCSSVariable("--yellow");
+      //         ctx.beginPath();
+      //         ctx.arc(bus_stop[0], bus_stop[1], 3, 0, 2 * Math.PI);
+      //         ctx.fill();
+      //         ctx.stroke();
+      //         ctx.closePath();
+      //       }
+      //     }
+      //   }
+      //
+      //   let land_data,
+      //     water_data,
+      //     buildings_data,
+      //     highways_data,
+      //     bus_routes_data,
+      //     bus_stops_data = [];
+      //
+      //   getLand(url).then((data) => {
+      //     land_data = data;
+      //     drawMap();
+      //   });
+      //   getWater(url).then((data) => {
+      //     water_data = data;
+      //     drawMap();
+      //   });
+      //   getBuildings(url).then((data) => {
+      //     buildings_data = data;
+      //     drawMap();
+      //   });
+      //   getHighways(url).then((data) => {
+      //     highways_data = data;
+      //     drawMap();
+      //   });
+      //   getBusRoutes(url).then((data) => {
+      //     bus_routes_data = data;
+      //     drawMap();
+      //   });
+      //   getBusStops(url).then((data) => {
+      //     bus_stops_data = data;
+      //     drawMap();
+      //   });
+      // }
+      //
+      // const FAKE_POSITION = {
+      //   coords: { latitude: 52.4128, longitude: -1.509 },
+      // };
+      //
+      // function onCurrentPoisitionError(error) {
+      //   console.error(error);
+      //   onCurrentPoisitionSucess(FAKE_POSITION);
+      // }
 
-        let canvas =
-          document.getElementById("canvas") || document.createElement("canvas");
-        canvas.id = "canvas";
-        let info = document.createElement("div");
-        info.id = "info";
-        info.style.display = "none";
-        info.style.position = "absolute";
-        info.style.left = "10px";
-        info.style.top = "10px";
-        info.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
-        info.style.padding = "5px";
-        info.style.borderRadius = "5px";
-        info.style.zIndex = "1000";
-        info.style.transition = "display 0.5s ease-in-out";
-        info.style.pointerEvents = "none";
-        document.body.appendChild(info);
-
-        function getColorFromCSSVariable(variable) {
-          let color = getComputedStyle(
-            document.documentElement,
-          ).getPropertyValue(variable);
-          return color;
-        }
-
-        const CURRENT_POSITION_OPTIONS = {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0,
-        };
-        const FAKE_POSITION = {
-          coords: { latitude: 52.4128, longitude: -1.509 },
-        };
-
-        canvas.addEventListener("mousemove", (event) => {
-          let x = event.clientX;
-          let y = event.clientY;
-          let rect = canvas.getBoundingClientRect();
-          x = x - rect.left;
-          y = rect.height - (y - rect.top);
-
-          let isHoveringBusStop = bus_stops_data?.some((bus_stop) => {
-            let [bus_stop_x, bus_stop_y] = bus_stop;
-            let distance = Math.sqrt(
-              (bus_stop_x - x) ** 2 + (bus_stop_y - y) ** 2,
-            );
-            return distance < 5;
-          });
-
-          let isHoveringBuilding = buildings_data?.some((building) => {
-            let isInside = false;
-            for (
-              let i = 0, j = building.length - 1;
-              i < building.length;
-              j = i++
-            ) {
-              let xi = building[i][0],
-                yi = building[i][1];
-              let xj = building[j][0],
-                yj = building[j][1];
-              let intersect =
-                yi > y != yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-              if (intersect) {
-                isInside = !isInside;
-              }
-            }
-            return isInside;
-          });
-
-          if (isHoveringBusStop) {
-            info.style.display = "block";
-            info.innerText = "Bus Stop";
-          } else if (isHoveringBuilding) {
-            info.style.display = "block";
-            info.innerText = "Building";
-          } else {
-            info.style.display = "none";
-          }
-        });
-
-        canvas.width = height;
-        canvas.height = width;
-        let ctx = canvas.getContext("2d");
-        ctx.translate(0, width);
-        ctx.scale(1, -1);
-        ctx.fillStyle = getColorFromCSSVariable("--grey");
-        ctx.fillRect(0, 0, height, width);
-
-        function drawMap() {
-          if (land_data) {
-            for (let land of land_data) {
-              ctx.beginPath();
-              ctx.fillStyle = getColorFromCSSVariable("--green");
-              for (let point of land) {
-                ctx.lineTo(point[0], point[1]);
-              }
-              ctx.fill();
-              ctx.closePath();
-            }
-          }
-          if (water_data) {
-            for (let water of water_data) {
-              ctx.beginPath();
-              ctx.fillStyle = getColorFromCSSVariable("--blue");
-              for (let point of water) {
-                ctx.lineTo(point[0], point[1]);
-              }
-              ctx.fill();
-              ctx.closePath();
-            }
-          }
-          if (buildings_data) {
-            for (let building of buildings_data) {
-              ctx.beginPath();
-              ctx.fillStyle = getColorFromCSSVariable("--red");
-              for (let point of building) {
-                ctx.lineTo(point[0], point[1]);
-              }
-              ctx.fill();
-              ctx.closePath();
-            }
-          }
-          if (highways_data) {
-            for (let highway of highways_data) {
-              ctx.beginPath();
-              ctx.strokeStyle = getColorFromCSSVariable("--yellow");
-              for (let point of highway) {
-                ctx.lineTo(point[0], point[1]);
-              }
-              ctx.stroke();
-              ctx.closePath();
-            }
-          }
-          if (bus_routes_data) {
-            for (let bus_route of bus_routes_data) {
-              ctx.beginPath();
-              ctx.strokeStyle = getColorFromCSSVariable("--yellow");
-              for (let point of bus_route) {
-                ctx.lineTo(point[0], point[1]);
-              }
-              ctx.stroke();
-              ctx.closePath();
-            }
-          }
-          if (bus_stops_data) {
-            for (let bus_stop of bus_stops_data) {
-              ctx.fillStyle = getColorFromCSSVariable("--yellow");
-              ctx.strokeStyle = getColorFromCSSVariable("--yellow");
-              ctx.beginPath();
-              ctx.arc(bus_stop[0], bus_stop[1], 3, 0, 2 * Math.PI);
-              ctx.fill();
-              ctx.stroke();
-              ctx.closePath();
-            }
-          }
-        }
-
-        let land_data,
-          water_data,
-          buildings_data,
-          highways_data,
-          bus_routes_data,
-          bus_stops_data = [];
-
-        getLand(url).then((data) => {
-          land_data = data;
-          drawMap();
-        });
-        getWater(url).then((data) => {
-          water_data = data;
-          drawMap();
-        });
-        getBuildings(url).then((data) => {
-          buildings_data = data;
-          drawMap();
-        });
-        getHighways(url).then((data) => {
-          highways_data = data;
-          drawMap();
-        });
-        getBusRoutes(url).then((data) => {
-          bus_routes_data = data;
-          drawMap();
-        });
-        getBusStops(url).then((data) => {
-          bus_stops_data = data;
-          drawMap();
-        });
-      }
-
-      const FAKE_POSITION = {
-        coords: { latitude: 52.4128, longitude: -1.509 },
-      };
-
-      function onCurrentPoisitionError(error) {
-        console.error(error);
-        onCurrentPoisitionSucess(FAKE_POSITION);
-      }
-
-      init().then(() => {
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            onCurrentPoisitionSucess,
-            onCurrentPoisitionError,
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 },
-          );
-        } else {
-          console.error("Geolocation is not supported by this browser.");
-          onCurrentPoisitionSucess(FAKE_POSITION);
-        }
-      });
+      // init().then(() => {
+        // if (navigator.geolocation) {
+        //   navigator.geolocation.getCurrentPosition(
+        //     onCurrentPoisitionSucess,
+        //     onCurrentPoisitionError,
+        //     { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 },
+        //   );
+        // } else {
+        //   console.error("Geolocation is not supported by this browser.");
+        //   onCurrentPoisitionSucess(FAKE_POSITION);
+        // }
+      // });
     </script>
   </body>
 </html>

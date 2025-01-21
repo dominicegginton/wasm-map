@@ -4,7 +4,7 @@ let
   develop = writers.writeBashBin "develop" ''
     PATH=${lib.makeBinPath [ nodePackages.http-server ]}:$PATH
     set -efu -o pipefail
-    wasm-pack build --dev --target web || exit 1
+    RUSTFLAGS=--cfg=web_sys_unstable_apis wasm-pack build --dev --target web || exit 1
     http-server -p 8080
   '';
 in

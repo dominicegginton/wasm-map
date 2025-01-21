@@ -1,8 +1,6 @@
 extern crate js_sys;
-extern crate osm_xml as osm;
 extern crate wasm_bindgen;
 extern crate web_sys;
-use std::f64;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -11,100 +9,140 @@ extern "C" {
     fn log(value: &str);
 }
 
-#[wasm_bindgen]
-pub fn greet(name: &str) -> String {
-    log(&format!("Hello, {}!", name));
+#[wasm_bindgen(start)]
+pub fn init() {
+  let window = web_sys::window().expect("no global `window` exists");
+  let body = window.document().unwrap().body().expect("no `body` element");
+  let button = window.document().unwrap().create_element("button").unwrap();
+  button.set_inner_html("Open File");
+  body.append_child(&button).unwrap();
 
-    "Hello, World!".to_string()
+  let cb = Closure::wrap(Box::new(|e: web_sys::PointerEvent| {
+    log(&format!("Event: {:?}", e));
+    let window = web_sys::window().expect("no global `window` exists");
+    let promise = window.show_open_file_picker().unwrap();
+    let future = wasm_bindgen_futures::JsFuture::from(promise);
+    wasm_bindgen_futures::spawn_local(async move {
+      let window = web_sys::window().expect("no global `window` exists");
+      let body = window.document().unwrap().body().expect("no `body` element");
+      let output = window.document().unwrap().create_element("p").unwrap();
+      output.set_inner_html("Loading...");
+      let output_str = "";
+
+      let result = future.await.unwrap();
+      let files = js_sys::try_iter(&result)
+        .unwrap()
+        .unwrap()
+        .map(|x| x.unwrap())
+        .for_each(|x| {
+          let file = web_sys::File::from(x);
+          log(&format!("File: {:?}", file));
+          let new_str = format!("{}<br>{}", output_str, file.name());
+          output.set_inner_html(&new_str);
+        });
+
+      body.append_child(&output).unwrap();
+    });
+  }) as Box<dyn FnMut(_)>);
+  let _ = button.add_event_listener_with_callback("click", &cb.as_ref().unchecked_ref());
+  cb.forget();
 }
 
-fn map_points(value: f64, start1: f64, stop1: f64, start2: f64, stop2: f64) -> f64 {
-    ((value - start1) / (stop1 - start1) * (stop2 - start2) + start2).floor()
-}
+///////////////////////////////////////////////
+///////////////////////////////////////////////
+///////////////////////////////////////////////
 
-fn process_points(
-    node: &osm::Node,
-    bounds: &osm::Bounds,
-    width: f64,
-    height: f64,
-) -> js_sys::Array {
-    let y = map_points(node.lat, bounds.minlat, bounds.maxlat, 0.0, width);
-    let x = map_points(node.lon, bounds.minlon, bounds.maxlon, 0.0, height);
-    let point = js_sys::Array::new();
-    point.push(&JsValue::from_f64(x));
-    point.push(&JsValue::from_f64(y));
-    point
-}
+// extern crate osm_xml as osm;
+// use std::f64;
+//
 
-fn parse_coords(
-    doc: &osm::OSM,
-    way: &osm::Way,
-    bounds: &osm::Bounds,
-    width: f64,
-    height: f64,
-) -> js_sys::Array {
-    let coords = js_sys::Array::new();
-    for node in way.nodes.iter() {
-        let n = &doc.resolve_reference(&node);
-        match n {
-            osm::Reference::Node(node) => {
-                let point = process_points(node, &bounds, width, height);
-                coords.push(&point);
-            }
-            _ => {}
-        }
-    }
-    coords
-}
-
-#[wasm_bindgen]
-pub fn parse_nodes(text: String, width: f64, height: f64) -> js_sys::Array {
-    let doc = osm::OSM::parse(text.as_bytes()).unwrap();
-    let bounds = doc.bounds.unwrap();
-    let arr = js_sys::Array::new();
-    for (_id, node) in doc.nodes.iter() {
-        arr.push(&process_points(node, &bounds, width, height));
-    }
-    arr
-}
-
-#[wasm_bindgen]
-pub fn parse_ways(text: String, width: f64, height: f64) -> js_sys::Array {
-    let doc = osm::OSM::parse(text.as_bytes()).unwrap();
-    let bounds = doc.bounds.unwrap();
-    let arr = js_sys::Array::new();
-    for (_id, way) in doc.ways.iter() {
-        arr.push(&parse_coords(&doc, way, &bounds, width, height));
-    }
-    arr
-}
-
-#[wasm_bindgen]
-pub fn parse_relations(text: String, width: f64, height: f64) -> js_sys::Array {
-    let doc = osm::OSM::parse(text.as_bytes()).unwrap();
-    let bounds = doc.bounds.unwrap();
-    let arr = js_sys::Array::new();
-    for (_id, relation) in doc.relations.iter() {
-        for member in relation.members.iter() {
-            match member {
-                osm::Member::Way(way, t) => {
-                    let w = &doc.resolve_reference(&way);
-                    match w {
-                        osm::Reference::Way(way) => {
-                            // Only processing coordinates for the "outer" way.
-                            if t == "outer" {
-                                arr.push(&&parse_coords(&doc, way, &bounds, width, height));
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-    arr
-}
+// fn map_points(value: f64, start1: f64, stop1: f64, start2: f64, stop2: f64) -> f64 {
+//     ((value - start1) / (stop1 - start1) * (stop2 - start2) + start2).floor()
+// }
+//
+// fn process_points(
+//     node: &osm::Node,
+//     bounds: &osm::Bounds,
+//     width: f64,
+//     height: f64,
+// ) -> js_sys::Array {
+//     let y = map_points(node.lat, bounds.minlat, bounds.maxlat, 0.0, width);
+//     let x = map_points(node.lon, bounds.minlon, bounds.maxlon, 0.0, height);
+//     let point = js_sys::Array::new();
+//     point.push(&JsValue::from_f64(x));
+//     point.push(&JsValue::from_f64(y));
+//     point
+// }
+//
+// fn parse_coords(
+//     doc: &osm::OSM,
+//     way: &osm::Way,
+//     bounds: &osm::Bounds,
+//     width: f64,
+//     height: f64,
+// ) -> js_sys::Array {
+//     let coords = js_sys::Array::new();
+//     for node in way.nodes.iter() {
+//         let n = &doc.resolve_reference(&node);
+//         match n {
+//             osm::Reference::Node(node) => {
+//                 let point = process_points(node, &bounds, width, height);
+//                 coords.push(&point);
+//             }
+//             _ => {}
+//         }
+//     }
+//     coords
+// }
+//
+// #[wasm_bindgen]
+// pub fn parse_nodes(text: String, width: f64, height: f64) -> js_sys::Array {
+//     let doc = osm::OSM::parse(text.as_bytes()).unwrap();
+//     let bounds = doc.bounds.unwrap();
+//     let arr = js_sys::Array::new();
+//     for (_id, node) in doc.nodes.iter() {
+//         arr.push(&process_points(node, &bounds, width, height));
+//     }
+//     arr
+// }
+//
+// #[wasm_bindgen]
+// pub fn parse_ways(text: String, width: f64, height: f64) -> js_sys::Array {
+//     let doc = osm::OSM::parse(text.as_bytes()).unwrap();
+//     let bounds = doc.bounds.unwrap();
+//     let arr = js_sys::Array::new();
+//     for (_id, way) in doc.ways.iter() {
+//         arr.push(&parse_coords(&doc, way, &bounds, width, height));
+//     }
+//     arr
+// }
+//
+// #[wasm_bindgen]
+// pub fn parse_relations(text: String, width: f64, height: f64) -> js_sys::Array {
+//     let doc = osm::OSM::parse(text.as_bytes()).unwrap();
+//     let bounds = doc.bounds.unwrap();
+//     let arr = js_sys::Array::new();
+//     for (_id, relation) in doc.relations.iter() {
+//         for member in relation.members.iter() {
+//             match member {
+//                 osm::Member::Way(way, t) => {
+//                     let w = &doc.resolve_reference(&way);
+//                     match w {
+//                         osm::Reference::Way(way) => {
+//                             // Only processing coordinates for the "outer" way.
+//                             if t == "outer" {
+//                                 arr.push(&&parse_coords(&doc, way, &bounds, width, height));
+//                             }
+//                         }
+//                         _ => {}
+//                     }
+//                 }
+//                 _ => {}
+//             }
+//         }
+//     }
+//     arr
+// }
 
 ///////////////////////////////////////////////
 ///////////////////////////////////////////////
