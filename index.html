@@ -15,10 +15,6 @@
         background: var(--grey);
       }
       body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        width: 100%;
         background: var(--grey);
         padding: 4px;
       }
@@ -34,7 +30,6 @@
   <body>
     <script type="module">
       import init from "./pkg/map.js";
-
       init().then(() => console.log("WASM initialized"));
 
       // import init, {

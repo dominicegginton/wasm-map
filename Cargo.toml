@@ -11,43 +11,12 @@ rustflags = ["--cfg=web_sys_unstable_apis"]
 
 [dependencies]
 futures = "0.3.17"
-console_error_panic_hook = { version = "0.1.7", optional = true }
+console_error_panic_hook = "0.1.7"
 wasm-bindgen = "0.2.96"
 wasm-bindgen-futures = "0.4.50"
 js-sys = "0.3.77"
 osm-xml = "0.6.2"
 
 [dependencies.web-sys]
-version = "0.3.72"
-features = [
-  "Event",
-  "PointerEvent",
-  "Geolocation",
-  "PositionOptions",
-  "PositionError",
-  "Position",
-  "Coordinates",
-  "CanvasRenderingContext2d",
-  "Document",
-  "Element",
-  "HtmlCanvasElement",
-  "Window",
-  "Navigator",
-  "Headers",
-  "Request",
-  "RequestInit",
-  "RequestMode",
-  "Response",
-  "File",
-  "Blob",
-  "FileReader",
-  "FileReaderSync",
-  "FileSystem",
-  "HtmlInputElement",
-  "FileSystemDirectoryEntry",
-  "FileSystemHandle",
-  "FileSystemHandleKind",
-  "FileSystemDirectoryHandle",
-  "ProgressEvent",
-  "ReadableStream",
-]
+version = "0.3.77"
+features = ["Window", "Navigator", "console", "Document", "HtmlInputElement", "Event", "EventTarget", "FileList", "File", "Blob", "ReadableStream", "ReadableStreamDefaultReader", "ReadableStreamReadResult"]

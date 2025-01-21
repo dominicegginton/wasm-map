@@ -1,7 +1,9 @@
-extern crate js_sys;
-extern crate wasm_bindgen;
-extern crate web_sys;
-use wasm_bindgen::prelude::*;
+extern crate console_error_panic_hook;
+use js_sys::{Object, Reflect, Uint8Array};
+use wasm_bindgen::{prelude::*, JsCast};
+use wasm_bindgen_futures::JsFuture;
+use web_sys::*;
+use std::panic;
 
 #[wasm_bindgen]
 extern "C" {
@@ -11,42 +13,85 @@ extern "C" {
 
 #[wasm_bindgen(start)]
 pub fn init() {
-  let window = web_sys::window().expect("no global `window` exists");
-  let body = window.document().unwrap().body().expect("no `body` element");
-  let button = window.document().unwrap().create_element("button").unwrap();
-  button.set_inner_html("Open File");
-  body.append_child(&button).unwrap();
+    std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+    let window = window().unwrap();
+    let document = window.document().unwrap();
+    let body = document.body().unwrap();
+    while let Some(child) = body.first_child() {
+        body.remove_child(&child).unwrap();
+    }
+    let input = document
+        .create_element("input")
+        .expect_throw("Create input")
+        .dyn_into::<HtmlInputElement>()
+        .unwrap();
+    input
+        .set_attribute("type", "file")
+        .expect_throw("Set input type file");
 
-  let cb = Closure::wrap(Box::new(|e: web_sys::PointerEvent| {
-    log(&format!("Event: {:?}", e));
-    let window = web_sys::window().expect("no global `window` exists");
-    let promise = window.show_open_file_picker().unwrap();
-    let future = wasm_bindgen_futures::JsFuture::from(promise);
-    wasm_bindgen_futures::spawn_local(async move {
-      let window = web_sys::window().expect("no global `window` exists");
-      let body = window.document().unwrap().body().expect("no `body` element");
-      let output = window.document().unwrap().create_element("p").unwrap();
-      output.set_inner_html("Loading...");
-      let output_str = "";
-
-      let result = future.await.unwrap();
-      let files = js_sys::try_iter(&result)
-        .unwrap()
-        .unwrap()
-        .map(|x| x.unwrap())
-        .for_each(|x| {
-          let file = web_sys::File::from(x);
-          log(&format!("File: {:?}", file));
-          let new_str = format!("{}<br>{}", output_str, file.name());
-          output.set_inner_html(&new_str);
-        });
-
-      body.append_child(&output).unwrap();
-    });
-  }) as Box<dyn FnMut(_)>);
-  let _ = button.add_event_listener_with_callback("click", &cb.as_ref().unchecked_ref());
-  cb.forget();
+    let recv_file = {
+        let input = input.clone();
+        Closure::<dyn FnMut()>::wrap(Box::new(move || {
+            let input = input.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                file_callback(input.files()).await;
+            })
+        }))
+    };
+    input
+        .add_event_listener_with_callback("change", recv_file.as_ref().dyn_ref().unwrap())
+        .expect_throw("Listen for file upload");
+    recv_file.forget();
+    body.append_child(&input).unwrap();
 }
+
+async fn file_callback(files: Option<FileList>) {
+    let files = match files {
+        Some(files) => files,
+        None => return,
+    };
+    for i in 0..files.length() {
+        let file = match files.item(i) {
+            Some(file) => file,
+            None => continue,
+        };
+        let reader = file
+            .stream()
+            .get_reader()
+            .dyn_into::<ReadableStreamDefaultReader>()
+            .expect_throw("Reader is reader");
+        let mut data = Vec::new();
+        loop {
+            let chunk = JsFuture::from(reader.read())
+                .await
+                .expect_throw("Read")
+                .dyn_into::<Object>()
+                .unwrap();
+            let done = Reflect::get(&chunk, &"done".into()).expect_throw("Get done");
+            if done.is_truthy() {
+                break;
+            }
+            let chunk = Reflect::get(&chunk, &"value".into())
+                .expect_throw("Get chunk")
+                .dyn_into::<Uint8Array>()
+                .expect_throw("bytes are bytes");
+            let data_len = data.len();
+            data.resize(data_len + chunk.length() as usize, 255);
+            chunk.copy_to(&mut data[data_len..]);
+        }
+        log(&format!("data: {:?}", data.len()));
+        let p = window()
+            .unwrap()
+            .document()
+            .unwrap()
+            .create_element("p")
+            .unwrap();
+
+        p.set_inner_html(&format!("File: {} size: {} data: {}", file.name(), data.len(), &String::from_utf8_lossy(&data).into_owned()));
+        window().unwrap().document().unwrap().body().unwrap().append_child(&p).unwrap();
+    }
+}
+
 
 ///////////////////////////////////////////////
 ///////////////////////////////////////////////
